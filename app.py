@@ -10,24 +10,76 @@ if "step" not in st.session_state:
     st.session_state.step = 1
 
 if st.session_state.step == 1:
-    st.title("Programación Lineal")
-    st.header("Comenzamos configurando nuestro modelo")
+    st.markdown("""
+        <style>
+        .big-title {font-size:2.2em; font-weight:bold; text-align:center;}
+        .subtitle {font-size:1.3em; text-align:center;}
+        .stButton>button {width: 100%;}
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 18px 10px 10px 10px;
+            margin-bottom: 18px;
+            background: #fafbfc;
+        }
+        .inactive-btn {
+            background-color: #fff0f0 !important;
+            color: #d32f2f !important;
+            border: 1px solid #d32f2f !important;
+        }
+        .active-btn {
+            background-color: #e3f2fd !important;
+            color: #1976d2 !important;
+            border: 1px solid #1976d2 !important;
+        }
+        .yellow-btn {
+            background-color: #fffde7 !important;
+            color: #fbc02d !important;
+            border: 1px solid #fbc02d !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    metodo = st.radio("Método a utilizar", ["Gráfico (2 variables)", "Simplex"])
-    tipo_opt = st.radio("Tipo de optimización", ["Maximizar", "Minimizar"])
+    st.markdown('<div class="big-title">Comenzamos configurando nuestro modelo</div>', unsafe_allow_html=True)
+    st.write("")
 
-    st.subheader("Variables")
-    x0_desc = st.text_input("Descripción de X0", "Pantalones (u/día)")
-    x1_desc = st.text_input("Descripción de X1", "Camisas (u/día)")
+    # Primera fila: Programación entera y Gestión de modelos
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown('<div class="card" style="text-align:center;">'
+                    '<div>Programación entera</div>'
+                    '<button class="inactive-btn" disabled>Inactiva</button>'
+                    '</div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="card" style="text-align:center;">'
+                    '<div>Gestión de Modelos</div>'
+                    '<button class="yellow-btn" disabled>Modelos</button>'
+                    '</div>', unsafe_allow_html=True)
 
-    st.subheader("Restricciones")
+    # Segunda fila: Método y tipo de optimización
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown('<div class="card" style="text-align:center;">Método a utilizar</div>', unsafe_allow_html=True)
+        metodo = st.radio("", ["Gráfico", "Simplex"], horizontal=True, key="metodo_radio")
+    with col4:
+        st.markdown('<div class="card" style="text-align:center;">Tipo de optimización</div>', unsafe_allow_html=True)
+        tipo_opt = st.radio("", ["Maximizar", "Minimizar"], horizontal=True, key="tipo_radio")
+
+    # Variables
+    st.markdown('<div class="subtitle">Variables</div>', unsafe_allow_html=True)
+    var_cols = st.columns(2)
+    x0_desc = var_cols[0].text_input("X0", "Pantalones (u/día)")
+    x1_desc = var_cols[1].text_input("X1", "Camisas (u/día)")
+
+    # Restricciones
+    st.markdown('<div class="subtitle">Restricciones</div>', unsafe_allow_html=True)
     n_restr = st.number_input("Cantidad de restricciones", min_value=1, max_value=5, value=2, step=1)
+    restr_cols = st.columns(1)
     restricciones = []
     for i in range(n_restr):
-        st.markdown(f"**Restricción R{i+1}**")
-        desc = st.text_input(f"Descripción R{i+1}", key=f"desc_{i}")
-        restricciones.append(desc)
+        restricciones.append(restr_cols[0].text_input(f"R{i}: Descripción de la restricción", key=f"desc_{i}"))
 
+    st.write("")
     if st.button("Siguiente"):
         st.session_state.metodo = metodo
         st.session_state.tipo_opt = tipo_opt
