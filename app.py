@@ -153,8 +153,6 @@ if st.session_state.step == 2:
         st.button("Volver", on_click=lambda: st.session_state.update({"step": 1}))
     with col_btn2:
         if st.button("Siguiente"):
-            st.session_state.c0 = c0
-            st.session_state.c1 = c1
             st.session_state.restr_data = restr_data
             st.session_state.step = 3
     st.stop()
@@ -177,9 +175,9 @@ if st.session_state.step == 3:
             b_eq.append(rhs)
 
     if st.session_state.tipo_opt == "Maximizar":
-        c = [-st.session_state.c0, -st.session_state.c1]
+        c = [-st.session_state["c0"], -st.session_state["c1"]]
     else:
-        c = [st.session_state.c0, st.session_state.c1]
+        c = [st.session_state["c0"], st.session_state["c1"]]
 
     res = linprog(
         c,
