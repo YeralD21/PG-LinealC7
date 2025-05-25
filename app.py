@@ -197,14 +197,14 @@ if st.session_state.step == 3:
         st.error("No se encontró solución óptima.")
 
     # Gráfica solo si método gráfico
-    if st.session_state.metodo == "Gráfico (2 variables)":
+    if st.session_state.metodo == "Gráfico":
         st.subheader("Gráfico de la región factible (solo 2 variables)")
         fig, ax = plt.subplots()
         x = np.linspace(0, max(20, res.x[0]*2 if res.success else 20), 400)
         for i, (a, b, op, rhs) in enumerate(st.session_state.restr_data):
             if b != 0:
                 y = (rhs - a * x) / b
-                ax.plot(x, y, label=f"R{i+1}: {a}x0 + {b}x1 {op} {rhs}")
+                ax.plot(x, y, label=f"R{i}: {a}x0 + {b}x1 {op} {rhs}")
         ax.set_xlim(left=0)
         ax.set_ylim(bottom=0)
         ax.legend()
