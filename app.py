@@ -200,47 +200,84 @@ if st.session_state.step == 3:
     if st.session_state.metodo == "Gráfico":
         st.subheader("Gráfico de la región factible (solo 2 variables)")
         fig, ax = plt.subplots()
-        x = np.linspace(0, max(20, res.x[0]*2 if res.success else 20), 400)
-        
-        # Lista para almacenar las funciones de restricción
-        constraint_functions = []
-        
-        # Dibujar las restricciones y guardar sus funciones
-        for i, (a, b, op, rhs) in enumerate(st.session_state.restr_data):
+        restr = st.session_state.restr_data
+
+        # Definir límites de la gráfica
+        x_bounds = [0, 20]
+        y_bounds = [0, 20]
+
+        # Generar todas las intersecciones posibles
+        puntos = []
+
+        # Intersección con los ejes
+        for i, (a, b, op, rhs) in enumerate(restr):
+            if a != 0:
+                x0 = rhs / a
+                if 0 <= x0 <= x_bounds[1]:
+                    puntos.append([x0, 0])
+            if b != 0:
+                y0 = rhs / b
+                if 0 <= y0 <= y_bounds[1]:
+                    puntos.append([0, y0])
+
+        # Intersección entre restricciones
+        for i in range(len(restr)):
+            for j in range(i+1, len(restr)):
+                a1, b1, _, rhs1 = restr[i]
+                a2, b2, _, rhs2 = restr[j]
+                A = np.array([[a1, b1], [a2, b2]])
+                if np.linalg.det(A) != 0:
+                    sol = np.linalg.solve(A, np.array([rhs1, rhs2]))
+                    if all(0 <= sol[k] <= x_bounds[1] for k in range(2)):
+                        puntos.append(sol)
+
+        # Filtrar puntos que cumplen TODAS las restricciones
+        factibles = []
+        for p in puntos:
+            cumple = True
+            for a, b, op, rhs in restr:
+                val = a*p[0] + b*p[1]
+                if op == "<=" and val > rhs + 1e-6:
+                    cumple = False
+                if op == ">=" and val < rhs - 1e-6:
+                    cumple = False
+                if op == "=" and abs(val - rhs) > 1e-6:
+                    cumple = False
+            if cumple:
+                factibles.append(p)
+
+        # Ordenar los puntos factibles para formar el polígono
+        if len(factibles) > 2:
+            factibles = np.array(factibles)
+            # Ordenar por ángulo polar respecto al centroide
+            centroid = np.mean(factibles, axis=0)
+            angles = np.arctan2(factibles[:,1] - centroid[1], factibles[:,0] - centroid[0])
+            orden = np.argsort(angles)
+            factibles = factibles[orden]
+            ax.fill(factibles[:,0], factibles[:,1], color='lightblue', alpha=0.4, label='Región factible')
+
+        # Graficar restricciones
+        x = np.linspace(0, x_bounds[1], 400)
+        colores = ['r', 'g', 'b', 'm', 'c']
+        for i, (a, b, op, rhs) in enumerate(restr):
             if b != 0:
                 y = (rhs - a * x) / b
-                ax.plot(x, y, label=f"R{i}: {a}x0 + {b}x1 {op} {rhs}")
-                # Guardar la función y el tipo de desigualdad
-                constraint_functions.append((lambda x, a=a, b=b, rhs=rhs: (rhs - a * x) / b, op))
-        
-        # Calcular la región factible
-        y_min = np.zeros_like(x)
-        y_max = np.full_like(x, np.inf)
-        
-        for func, op in constraint_functions:
-            y = func(x)
-            if op == "<=":
-                y_max = np.minimum(y_max, y)
-            elif op == ">=":
-                y_min = np.maximum(y_min, y)
-        
-        # Rellenar la región factible
-        ax.fill_between(x, y_min, y_max, where=(y_max > y_min), 
-                       color='lightblue', alpha=0.3, label='Región Factible')
-        
-        ax.set_xlim(left=0)
-        ax.set_ylim(bottom=0)
-        ax.legend()
+                ax.plot(x, y, colores[i%len(colores)], label=f'R{i+1}')
+            else:
+                xval = rhs / a
+                ax.axvline(xval, color=colores[i%len(colores)], label=f'R{i+1}')
+
+        # Punto óptimo
+        if res.success:
+            ax.plot(res.x[0], res.x[1], 'ko', label='Óptimo')
+            ax.annotate(f"({res.x[0]:.2f},{res.x[1]:.2f})", (res.x[0], res.x[1]), textcoords="offset points", xytext=(10,10))
+
+        ax.set_xlim(x_bounds)
+        ax.set_ylim(y_bounds)
         ax.set_xlabel("X0")
         ax.set_ylabel("X1")
-        
-        # Marcar el punto óptimo si existe
-        if res.success:
-            ax.plot(res.x[0], res.x[1], 'ro', label="Óptimo")
-            
-        # Agregar una cuadrícula para mejor visualización
+        ax.legend()
         ax.grid(True, linestyle='--', alpha=0.7)
-        
         st.pyplot(fig)
 
     st.button("Volver", on_click=lambda: st.session_state.update({"step": 2}))
