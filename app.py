@@ -201,17 +201,46 @@ if st.session_state.step == 3:
         st.subheader("Gráfico de la región factible (solo 2 variables)")
         fig, ax = plt.subplots()
         x = np.linspace(0, max(20, res.x[0]*2 if res.success else 20), 400)
+        
+        # Lista para almacenar las funciones de restricción
+        constraint_functions = []
+        
+        # Dibujar las restricciones y guardar sus funciones
         for i, (a, b, op, rhs) in enumerate(st.session_state.restr_data):
             if b != 0:
                 y = (rhs - a * x) / b
                 ax.plot(x, y, label=f"R{i}: {a}x0 + {b}x1 {op} {rhs}")
+                # Guardar la función y el tipo de desigualdad
+                constraint_functions.append((lambda x, a=a, b=b, rhs=rhs: (rhs - a * x) / b, op))
+        
+        # Calcular la región factible
+        y_min = np.zeros_like(x)
+        y_max = np.full_like(x, np.inf)
+        
+        for func, op in constraint_functions:
+            y = func(x)
+            if op == "<=":
+                y_max = np.minimum(y_max, y)
+            elif op == ">=":
+                y_min = np.maximum(y_min, y)
+        
+        # Rellenar la región factible
+        ax.fill_between(x, y_min, y_max, where=(y_max > y_min), 
+                       color='lightblue', alpha=0.3, label='Región Factible')
+        
         ax.set_xlim(left=0)
         ax.set_ylim(bottom=0)
         ax.legend()
         ax.set_xlabel("X0")
         ax.set_ylabel("X1")
+        
+        # Marcar el punto óptimo si existe
         if res.success:
             ax.plot(res.x[0], res.x[1], 'ro', label="Óptimo")
+            
+        # Agregar una cuadrícula para mejor visualización
+        ax.grid(True, linestyle='--', alpha=0.7)
+        
         st.pyplot(fig)
 
     st.button("Volver", on_click=lambda: st.session_state.update({"step": 2}))
