@@ -202,9 +202,11 @@ if st.session_state.step == 3:
         fig, ax = plt.subplots()
         restr = st.session_state.restr_data
 
-        # Definir límites de la gráfica
-        x_bounds = [0, 20]
-        y_bounds = [0, 20]
+        # Ajustar límites dinámicamente
+        max_x = max([res.x[0] if res.success else 0] + [rhs/a if a != 0 else 0 for a, b, op, rhs in restr if a != 0] + [20])
+        max_y = max([res.x[1] if res.success else 0] + [rhs/b if b != 0 else 0 for a, b, op, rhs in restr if b != 0] + [20])
+        x_bounds = [0, max(20, max_x*1.1)]
+        y_bounds = [0, max(20, max_y*1.1)]
 
         # Generar todas las intersecciones posibles
         puntos = []
@@ -228,7 +230,7 @@ if st.session_state.step == 3:
                 A = np.array([[a1, b1], [a2, b2]])
                 if np.linalg.det(A) != 0:
                     sol = np.linalg.solve(A, np.array([rhs1, rhs2]))
-                    if all(0 <= sol[k] <= x_bounds[1] for k in range(2)):
+                    if all(0 <= sol[k] <= max(x_bounds[1], y_bounds[1]) for k in range(2)):
                         puntos.append(sol)
 
         # Filtrar puntos que cumplen TODAS las restricciones
@@ -249,7 +251,6 @@ if st.session_state.step == 3:
         # Ordenar los puntos factibles para formar el polígono
         if len(factibles) > 2:
             factibles = np.array(factibles)
-            # Ordenar por ángulo polar respecto al centroide
             centroid = np.mean(factibles, axis=0)
             angles = np.arctan2(factibles[:,1] - centroid[1], factibles[:,0] - centroid[0])
             orden = np.argsort(angles)
@@ -257,7 +258,7 @@ if st.session_state.step == 3:
             ax.fill(factibles[:,0], factibles[:,1], color='lightblue', alpha=0.4, label='Región factible')
 
         # Graficar restricciones
-        x = np.linspace(0, x_bounds[1], 400)
+        x = np.linspace(x_bounds[0], x_bounds[1], 400)
         colores = ['r', 'g', 'b', 'm', 'c']
         for i, (a, b, op, rhs) in enumerate(restr):
             if b != 0:
@@ -268,10 +269,10 @@ if st.session_state.step == 3:
                     xval = rhs / a
                     ax.axvline(xval, color=colores[i%len(colores)], label=f'R{i+1}')
 
-            # Punto óptimo
-            if res.success:
-                ax.plot(res.x[0], res.x[1], 'ko', label='Óptimo')
-                ax.annotate(f"({res.x[0]:.2f},{res.x[1]:.2f})", (res.x[0], res.x[1]), textcoords="offset points", xytext=(10,10))
+        # Punto óptimo
+        if res.success:
+            ax.plot(res.x[0], res.x[1], 'ko', label='Óptimo')
+            ax.annotate(f"({res.x[0]:.2f},{res.x[1]:.2f})", (res.x[0], res.x[1]), textcoords="offset points", xytext=(10,10))
 
         ax.set_xlim(x_bounds)
         ax.set_ylim(y_bounds)
