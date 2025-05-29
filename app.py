@@ -264,13 +264,14 @@ if st.session_state.step == 3:
                 y = (rhs - a * x) / b
                 ax.plot(x, y, colores[i%len(colores)], label=f'R{i+1}')
             else:
-                xval = rhs / a
-                ax.axvline(xval, color=colores[i%len(colores)], label=f'R{i+1}')
+                if a != 0:
+                    xval = rhs / a
+                    ax.axvline(xval, color=colores[i%len(colores)], label=f'R{i+1}')
 
-        # Punto óptimo
-        if res.success:
-            ax.plot(res.x[0], res.x[1], 'ko', label='Óptimo')
-            ax.annotate(f"({res.x[0]:.2f},{res.x[1]:.2f})", (res.x[0], res.x[1]), textcoords="offset points", xytext=(10,10))
+            # Punto óptimo
+            if res.success:
+                ax.plot(res.x[0], res.x[1], 'ko', label='Óptimo')
+                ax.annotate(f"({res.x[0]:.2f},{res.x[1]:.2f})", (res.x[0], res.x[1]), textcoords="offset points", xytext=(10,10))
 
         ax.set_xlim(x_bounds)
         ax.set_ylim(y_bounds)
